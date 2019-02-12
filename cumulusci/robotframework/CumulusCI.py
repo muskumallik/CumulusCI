@@ -4,6 +4,7 @@ from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from simple_salesforce import Salesforce
 from requests import Session
+import json
 
 from cumulusci.cli.config import CliRuntime
 from cumulusci.core.config import TaskConfig
@@ -174,7 +175,15 @@ class CumulusCI(object):
         return self._run_task(task_class, task_config)
 
     def _session_callback(self, response, **kwargs):
+        print("QQQQQQQ1", response)
+        print("QQQQQQQ2", help(response))
+        print("QQQQQQQ3", dir(response))
+        print("QQQQQQQ4", response.text)
+        print("QQQQQQQ5", response.headers.keys())
+        print("QQQQQQQ6", "perfmetrics" in response.headers.keys())
+
         if "perfmetrics" in response.headers.keys():
+            jiofjeif()
             metric_str = response.headers["perfmetrics"]
             metrics = json.loads(metric_str)
             # so, there were perfmetrics! we're gonna assume/expect the caller
@@ -182,8 +191,8 @@ class CumulusCI(object):
             metrics = json.loads(response.headers["perfmetrics"])
             # grab the top level totalTime
             metric = metrics["callTree"]["totalTime"]
-            self.builtin.log("PERF {}ns".format(metric))
-            self.builtin.log("{} {}ns".format(PERF_TOKEN, metric))
+            self.builtin.log("PERF_X {}ns".format(metric))
+            self.builtin.log("ZZZZ {} {}ns".format(PERF_TOKEN, metric))
 
     def _init_api(self, base_url=None):
         api_version = self.project_config.project__package__api_version

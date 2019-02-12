@@ -10,6 +10,18 @@ from cumulusci.robotframework.CumulusCI import PERF_TOKEN
 from SeleniumLibrary.errors import ElementNotFound
 from urllib3.exceptions import ProtocolError
 
+logging.basicConfig(level=logging.DEBUG)
+
+import http.client
+
+http.client.HTTPConnection.debuglevel = 1
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
+
 OID_REGEX = r"^(%2F)?([a-zA-Z0-9]{15,18})$"
 
 
@@ -21,9 +33,9 @@ class Salesforce(object):
         self.debug = debug
         self._session_records = []
         # Turn off info logging of all http requests
-        logging.getLogger("requests.packages.urllib3.connectionpool").setLevel(
-            logging.WARN
-        )
+        # logging.getLogger("requests.packages.urllib3.connectionpool").setLevel(
+        #    logging.WARN
+        # )
 
     @property
     def builtin(self):
@@ -375,9 +387,14 @@ class Salesforce(object):
         return res["id"]
 
     def salesforce_insert_perf(self, bucket, obj_name, **kwargs):
-        self.builtin.log("Inserting {} with values {}".format(obj_name, kwargs))
+        self.builtin.log(
+            "QQQQ PERF: Inserting {} with values {}".format(obj_name, kwargs)
+        )
         self.builtin.log("{} {}".format(PERF_TOKEN, bucket))
         self.cumulusci.sf.session.headers["Sforce-Call-Options"] = "perfOption=basic"
+        self.builtin.log(
+            "Sforce-Call-Options {}".format(self.cumulusci.sf.session.headers)
+        )
 
         obj_class = getattr(self.cumulusci.sf, obj_name)
         res = obj_class.create(kwargs)

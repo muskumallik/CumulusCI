@@ -30,7 +30,17 @@ Salesforce Insert
     &{contact} =  Salesforce Get  Contact  ${contact_id}
     Should Be Equal  &{contact}[FirstName]  ${first_name}
     Should Be Equal  &{contact}[LastName]  ${last_name}
-    
+
+Salesforce Insert Perf
+    ${first_name} =  Generate Random String
+    ${last_name} =  Generate Random String
+    ${contact_id} =  Salesforce Insert Perf     Xyzzy   Contact
+    ...  FirstName=${first_name}
+    ...  LastName=${last_name}
+    &{contact} =  Salesforce Get  Contact  ${contact_id}
+    Should Be Equal  &{contact}[FirstName]  ${first_name}
+    Should Be Equal  &{contact}[LastName]  ${last_name}
+
 Salesforce Update
     &{contact} =  Create Contact
     ${new_last_name} =  Generate Random String
