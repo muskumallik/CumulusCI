@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from simple_salesforce import SalesforceResourceNotFound
 from cumulusci.robotframework.locators import lex_locators
 from cumulusci.robotframework.utils import selenium_retry
+from cumulusci.robotframework.CumulusCI import PERF_TOKEN
 from SeleniumLibrary.errors import ElementNotFound
 from urllib3.exceptions import ProtocolError
 
@@ -371,6 +372,18 @@ class Salesforce(object):
         obj_class = getattr(self.cumulusci.sf, obj_name)
         res = obj_class.create(kwargs)
         self.store_session_record(obj_name, res["id"])
+        return res["id"]
+
+    def salesforce_insert_perf(self, bucket, obj_name, **kwargs):
+        self.builtin.log("Inserting {} with values {}".format(obj_name, kwargs))
+        self.builtin.log("{} {}".format(PERF_TOKEN, bucket))
+        self.cumulusci.sf.session.headers["Sforce-Call-Options"] = "perfOption=basic"
+
+        obj_class = getattr(self.cumulusci.sf, obj_name)
+        res = obj_class.create(kwargs)
+        self.store_session_record(obj_name, res["id"])
+
+        self.cumulusci.sf.session.headers["Sforce-Call-Options"] = ""
         return res["id"]
 
     def salesforce_query(self, obj_name, **kwargs):

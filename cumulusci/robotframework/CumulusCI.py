@@ -3,6 +3,7 @@ import logging
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from simple_salesforce import Salesforce
+from requests import Session
 
 from cumulusci.cli.config import CliRuntime
 from cumulusci.core.config import TaskConfig
@@ -11,6 +12,8 @@ from cumulusci.core.tasks import CURRENT_TASK
 from cumulusci.core.utils import import_class
 from cumulusci.robotframework.utils import set_pdb_trace
 from cumulusci.tasks.robotframework.robotframework import Robot
+
+PERF_TOKEN = "PERF"
 
 
 class CumulusCI(object):
@@ -87,6 +90,10 @@ class CumulusCI(object):
         if self._tooling is None:
             self._tooling = self._init_api("tooling/")
         return self._tooling
+
+    @property
+    def builtin(self):
+        return BuiltIn()
 
     def set_login_url(self):
         """ Sets the LOGIN_URL variable in the suite scope which will
@@ -166,13 +173,29 @@ class CumulusCI(object):
         task_class, task_config = self._init_task(class_path, options, TaskConfig())
         return self._run_task(task_class, task_config)
 
+    def _session_callback(self, response, **kwargs):
+        if "perfmetrics" in response.headers.keys():
+            metric_str = response.headers["perfmetrics"]
+            metrics = json.loads(metric_str)
+            # so, there were perfmetrics! we're gonna assume/expect the caller
+            # will clean up the header afterward....
+            metrics = json.loads(response.headers["perfmetrics"])
+            # grab the top level totalTime
+            metric = metrics["callTree"]["totalTime"]
+            self.builtin.log("PERF {}ns".format(metric))
+            self.builtin.log("{} {}ns".format(PERF_TOKEN, metric))
+
     def _init_api(self, base_url=None):
         api_version = self.project_config.project__package__api_version
+
+        session = Session()
+        session.hooks = {"response": [self._session_callback]}
 
         rv = Salesforce(
             instance=self.org.instance_url.replace("https://", ""),
             session_id=self.org.access_token,
             version=api_version,
+            session=session,
         )
         if base_url is not None:
             rv.base_url += base_url
