@@ -391,7 +391,7 @@ class Salesforce(object):
             "QQQQ PERF: Inserting {} with values {}".format(obj_name, kwargs)
         )
         self.builtin.log("{} {}".format(PERF_TOKEN, bucket))
-        self.cumulusci.sf.session.headers["Sforce-Call-Options"] = "perfOption=basic"
+        self.cumulusci.sf.session.headers["Sforce-Call-Options"] = "perfOption=MINIMUM"
         self.builtin.log(
             "Sforce-Call-Options {}".format(self.cumulusci.sf.session.headers)
         )

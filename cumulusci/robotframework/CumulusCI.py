@@ -175,15 +175,7 @@ class CumulusCI(object):
         return self._run_task(task_class, task_config)
 
     def _session_callback(self, response, **kwargs):
-        print("QQQQQQQ1", response)
-        print("QQQQQQQ2", help(response))
-        print("QQQQQQQ3", dir(response))
-        print("QQQQQQQ4", response.text)
-        print("QQQQQQQ5", response.headers.keys())
-        print("QQQQQQQ6", "perfmetrics" in response.headers.keys())
-
         if "perfmetrics" in response.headers.keys():
-            jiofjeif()
             metric_str = response.headers["perfmetrics"]
             metrics = json.loads(metric_str)
             # so, there were perfmetrics! we're gonna assume/expect the caller
