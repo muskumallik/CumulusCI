@@ -13,8 +13,7 @@ from cumulusci.core.tasks import CURRENT_TASK
 from cumulusci.core.utils import import_class
 from cumulusci.robotframework.utils import set_pdb_trace
 from cumulusci.tasks.robotframework.robotframework import Robot
-
-PERF_TOKEN = "PERF"
+from contextlib import contextmanager
 
 
 class CumulusCI(object):
@@ -46,6 +45,7 @@ class CumulusCI(object):
         self._org = None
         self._sf = None
         self._tooling = None
+        self._response_hooks = []
         # Turn off info logging of all http requests
         logging.getLogger("requests.packages.urllib3.connectionpool").setLevel(
             logging.WARN
@@ -174,33 +174,21 @@ class CumulusCI(object):
         task_class, task_config = self._init_task(class_path, options, TaskConfig())
         return self._run_task(task_class, task_config)
 
-    def _session_callback(self, response, **kwargs):
-        if "perfmetrics" in response.headers.keys():
-            metric_str = response.headers["perfmetrics"]
-            metrics = json.loads(metric_str)
-            # so, there were perfmetrics! we're gonna assume/expect the caller
-            # will clean up the header afterward....
-            metrics = json.loads(response.headers["perfmetrics"])
-            # grab the top level totalTime
-            metric = metrics["callTree"]["totalTime"]
-            self.builtin.log("PERF_X {}ns".format(metric))
-            self.builtin.log("ZZZZ {} {}ns".format(PERF_TOKEN, metric))
-
     def _init_api(self, base_url=None):
         api_version = self.project_config.project__package__api_version
 
         session = Session()
-        session.hooks = {"response": [self._session_callback]}
+        session.hooks = {"response": []}
 
-        rv = Salesforce(
+        sf = Salesforce(
             instance=self.org.instance_url.replace("https://", ""),
             session_id=self.org.access_token,
             version=api_version,
             session=session,
         )
         if base_url is not None:
-            rv.base_url += base_url
-        return rv
+            sf.base_url += base_url
+        return sf
 
     def _init_task(self, class_path, options, task_config):
         task_class = import_class(class_path)
@@ -235,3 +223,56 @@ class CumulusCI(object):
     def debug(self):
         """Pauses execution and enters the Python debugger."""
         set_pdb_trace()
+
+    def register_response_hook(self, hook):
+        if hook not in self.sf.session.hooks["response"]:
+            self.sf.session.hooks["response"].append(hook)
+
+    def unregister_response_hook(self, hook):
+        if hook in self.sf.session.hooks["response"]:
+            self.sf.session.hooks["response"].remove(hook)
+
+    @contextmanager
+    def perf_wrapper(self, kwId, python_tag=None):
+        def response_callback(response, **kwargs):
+            if "perfmetrics" in response.headers.keys():
+                metric_str = response.headers["perfmetrics"]
+                metadata = {}
+                if kwId:
+                    metadata["robot_tag"] = kwId
+                if python_tag:
+                    metadata["python_tag"] = python_tag
+
+                # let's shrink the JSON down to something more managable
+                self.builtin.log(
+                    "#perfmetrics {} \n{}".format(
+                        metadata or "", perfJSON2CSV(metric_str)
+                    )
+                )
+
+        self.sf.session.headers["Sforce-Call-Options"] = "perfOption=MINIMUM"
+        self.register_response_hook(response_callback)
+        try:
+            yield
+        finally:
+            self.sf.session.headers["Sforce-Call-Options"] = ""
+            self.unregister_response_hook(response_callback)
+
+
+def perfJSON2CSV(jsondata):
+    def row(values):
+        return ",".join(values) + "\n"
+
+    res = ""
+    try:
+        data = json.loads(jsondata)
+        metrics = data["summary"]
+        res += "#" + row(metrics[0].keys())
+        for metric in metrics:
+            res += row((str(m) for m in metric.values()))
+
+    except Exception:
+        # TODO: do something better here
+        raise
+
+    return res

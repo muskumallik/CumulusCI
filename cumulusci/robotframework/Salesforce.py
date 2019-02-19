@@ -6,21 +6,18 @@ from selenium.webdriver.common.keys import Keys
 from simple_salesforce import SalesforceResourceNotFound
 from cumulusci.robotframework.locators import lex_locators
 from cumulusci.robotframework.utils import selenium_retry
-from cumulusci.robotframework.CumulusCI import PERF_TOKEN
 from SeleniumLibrary.errors import ElementNotFound
 from urllib3.exceptions import ProtocolError
 
 logging.basicConfig(level=logging.DEBUG)
 
-import http.client
-
-http.client.HTTPConnection.debuglevel = 1
+# http.client.HTTPConnection.debuglevel = 1
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 requests_log = logging.getLogger("requests.packages.urllib3")
-requests_log.setLevel(logging.DEBUG)
-requests_log.propagate = True
+# requests_log.setLevel(logging.DEBUG)
+# requests_log.propagate = True
 
 OID_REGEX = r"^(%2F)?([a-zA-Z0-9]{15,18})$"
 
@@ -181,12 +178,13 @@ class Salesforce(object):
             locator = locator[key]
         return locator.format(*args, **kwargs)
 
-    def get_record_type_id(self, obj_type, developer_name):
+    def get_record_type_id(self, obj_type, developer_name, kwId=None):
         """Returns the Record Type Id for a record type name"""
         soql = "SELECT Id FROM RecordType WHERE SObjectType='{}' and DeveloperName='{}'".format(
             obj_type, developer_name
         )
-        res = self.cumulusci.sf.query_all(soql)
+        with self.cumulusci.perf_wrapper(kwId):
+            res = self.cumulusci.sf.query_all(soql)
         return res["records"][0]["Id"]
 
     def get_related_list_count(self, heading):
@@ -365,45 +363,32 @@ class Salesforce(object):
         self.builtin.log("Waiting for modal to close")
         self.wait_until_modal_is_closed()
 
-    def salesforce_delete(self, obj_name, obj_id):
+    def salesforce_delete(self, obj_name, obj_id, kwId=None):
         """ Deletes a Saleforce object by id and returns the dict result """
         self.builtin.log("Deleting {} with Id {}".format(obj_name, obj_id))
         obj_class = getattr(self.cumulusci.sf, obj_name)
-        obj_class.delete(obj_id)
+        with self.cumulusci.perf_wrapper(kwId):
+            obj_class.delete(obj_id)
         self.remove_session_record(obj_name, obj_id)
 
-    def salesforce_get(self, obj_name, obj_id):
+    def salesforce_get(self, obj_name, obj_id, kwId=None):
         """ Gets a Salesforce object by id and returns the dict result """
         self.builtin.log("Getting {} with Id {}".format(obj_name, obj_id))
         obj_class = getattr(self.cumulusci.sf, obj_name)
-        return obj_class.get(obj_id)
+        with self.cumulusci.perf_wrapper(kwId):
+            return obj_class.get(obj_id)
 
-    def salesforce_insert(self, obj_name, **kwargs):
+    def salesforce_insert(self, obj_name, kwId=None, **kwargs):
         """ Inserts a Salesforce object setting fields using kwargs and returns the id """
         self.builtin.log("Inserting {} with values {}".format(obj_name, kwargs))
         obj_class = getattr(self.cumulusci.sf, obj_name)
-        res = obj_class.create(kwargs)
+
+        with self.cumulusci.perf_wrapper(kwId, "TestInsertPythonTag"):
+            res = obj_class.create(kwargs)
         self.store_session_record(obj_name, res["id"])
         return res["id"]
 
-    def salesforce_insert_perf(self, bucket, obj_name, **kwargs):
-        self.builtin.log(
-            "QQQQ PERF: Inserting {} with values {}".format(obj_name, kwargs)
-        )
-        self.builtin.log("{} {}".format(PERF_TOKEN, bucket))
-        self.cumulusci.sf.session.headers["Sforce-Call-Options"] = "perfOption=MINIMUM"
-        self.builtin.log(
-            "Sforce-Call-Options {}".format(self.cumulusci.sf.session.headers)
-        )
-
-        obj_class = getattr(self.cumulusci.sf, obj_name)
-        res = obj_class.create(kwargs)
-        self.store_session_record(obj_name, res["id"])
-
-        self.cumulusci.sf.session.headers["Sforce-Call-Options"] = ""
-        return res["id"]
-
-    def salesforce_query(self, obj_name, **kwargs):
+    def salesforce_query(self, obj_name, kwId=None, **kwargs):
         """ Constructs and runs a simple SOQL query and returns the dict results """
         query = "SELECT "
         if "select" in kwargs:
@@ -419,20 +404,23 @@ class Salesforce(object):
         if where:
             query += " WHERE " + " AND ".join(where)
         self.builtin.log("Running SOQL Query: {}".format(query))
-        return self.cumulusci.sf.query_all(query).get("records", [])
+        with self.cumulusci.perf_wrapper(kwId):
+            return self.cumulusci.sf.query_all(query).get("records", [])
 
-    def salesforce_update(self, obj_name, obj_id, **kwargs):
+    def salesforce_update(self, obj_name, obj_id, kwId=None, **kwargs):
         """ Updates a Salesforce object by id and returns the dict results """
         self.builtin.log(
             "Updating {} {} with values {}".format(obj_name, obj_id, kwargs)
         )
         obj_class = getattr(self.cumulusci.sf, obj_name)
-        return obj_class.update(obj_id, kwargs)
+        with self.cumulusci.perf_wrapper(kwId):
+            return obj_class.update(obj_id, kwargs)
 
-    def soql_query(self, query):
+    def soql_query(self, query, kwId=None):
         """ Runs a simple SOQL query and returns the dict results """
         self.builtin.log("Running SOQL Query: {}".format(query))
-        return self.cumulusci.sf.query_all(query)
+        with self.cumulusci.perf_wrapper(kwId):
+            return self.cumulusci.sf.query_all(query)
 
     def store_session_record(self, obj_type, obj_id):
         """ Stores a Salesforce record's id for use in the Delete Session Records keyword """
