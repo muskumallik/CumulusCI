@@ -251,5 +251,5 @@ function updateSelectors(parent, unique_values_for_columns){
 var oReq = new XMLHttpRequest();
 oReq.onload = reqListener;
 oReq.onerror = reqError;
-oReq.open('get', './foo.csv', true);
+oReq.open('get', './example-data.csv', true);
 oReq.send();
