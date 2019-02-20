@@ -1,0 +1,210 @@
+<html>
+
+<head>
+    <title>Perfviewer demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+    <script src="http://google.github.io/palette.js/palette.js"></script>
+    <script src="perfviewer.js"></script>
+    <script>
+    </script>
+</head>
+
+<body>
+    <section class="customPerfViewer">
+        <h2>totalTime of SOQL Queries in all tests grouped by test name</h2>
+        <table><tr><td>
+            Project Name
+        </td><td>
+            Branch
+        </td><td>
+            Suite Name
+        </td><td>
+            Test Name
+        </td><td>
+            Keyword Name
+        </td><td>
+            Robot Tag
+        </td><td>
+            Python Tag
+        </td><td>
+            Metric
+        </td><td>
+        </tr>
+            <tr>
+            <td><select name="project_name"></select></td>
+            <td><select name="build_id"></select></td>
+            <td><select name="suite_name"></select></td>
+            <td><select name="test_name"></select></td>
+            <td><select name="kw_name"></select></td>
+            <td><select name="robot_tag"></select></td>
+            <td><select name="python_tag"></select></td>
+            <td><select name="metric"></select></td>
+        </tr></table>
+        <p>
+        <textarea rows=4 cols=80>
+        { "metric": "soql",
+            "test_name": "#groupby"
+        }
+        </textarea>
+        </p><button onClick="customFilter(this.parentNode)">Render</button>
+        <canvas width="10"></canvas>
+    </section>
+    <section class="customPerfViewer">
+        <h2>totalTime of all metrics in Delete tests grouped by metric</h2>
+        <table><tr><td>
+                Project Name
+            </td><td>
+                Branch
+            </td><td>
+                Suite Name
+            </td><td>
+                Test Name
+            </td><td>
+                Keyword Name
+            </td><td>
+                Robot Tag
+            </td><td>
+                Python Tag
+            </td><td>
+                Metric
+            </td><td>
+            </tr>
+                <tr>
+                <td><select name="project_name"></select></td>
+                <td><select name="build_id"></select></td>
+                <td><select name="suite_name"></select></td>
+                <td><select name="test_name"></select></td>
+                <td><select name="kw_name"></select></td>
+                <td><select name="robot_tag"></select></td>
+                <td><select name="python_tag"></select></td>
+                <td><select name="metric"></select></td>
+            </tr></table>
+        <textarea rows=4 cols=80>
+        {
+            "kw_name": "Salesforce Delete",
+            "metric": "#groupby"
+        }
+        </textarea>
+        <br/><button onClick="customFilter(this.parentNode)">Render</button>
+        <canvas></canvas>
+    </section>
+    <section class="customPerfViewer">
+        <h2>totalTime of all metrics in all tests grouped by metric</h2>
+        <table><tr><td>
+                Project Name
+            </td><td>
+                Branch
+            </td><td>
+                Suite Name
+            </td><td>
+                Test Name
+            </td><td>
+                Keyword Name
+            </td><td>
+                Robot Tag
+            </td><td>
+                Python Tag
+            </td><td>
+                Metric
+            </td><td>
+            </tr>
+                <tr>
+                <td><select name="project_name"></select></td>
+                <td><select name="build_id"></select></td>
+                <td><select name="suite_name"></select></td>
+                <td><select name="test_name"></select></td>
+                <td><select name="kw_name"></select></td>
+                <td><select name="robot_tag"></select></td>
+                <td><select name="python_tag"></select></td>
+                <td><select name="metric"></select></td>
+            </tr></table>
+        <textarea rows=4 cols=80>
+        {
+            "metric": "#groupby"
+        }
+        </textarea>
+        <br/><button onClick="customFilter(this.parentNode)">Render</button>
+        <canvas class="perfviewer" data-filter='{
+}'></canvas>
+    </section>
+    <section class="customPerfViewer">
+        <h2>totalTime of all cache-caas grouped by test</h2>
+        <table><tr><td>
+                Project Name
+            </td><td>
+                Branch
+            </td><td>
+                Suite Name
+            </td><td>
+                Test Name
+            </td><td>
+                Keyword Name
+            </td><td>
+                Robot Tag
+            </td><td>
+                Python Tag
+            </td><td>
+                Metric
+            </td><td>
+            </tr>
+                <tr>
+                <td><select name="project_name"></select></td>
+                <td><select name="build_id"></select></td>
+                <td><select name="suite_name"></select></td>
+                <td><select name="test_name"></select></td>
+                <td><select name="kw_name"></select></td>
+                <td><select name="robot_tag"></select></td>
+                <td><select name="python_tag"></select></td>
+                <td><select name="metric"></select></td>
+            </tr></table>
+        <textarea rows=4 cols=80>
+        {
+            "metric": "cache-caas",
+            "test_name": "#groupby"
+        }
+        </textarea>
+        <br/><button onClick="customFilter(this.parentNode)">Render</button>
+        <canvas></canvas>
+    </section>
+    <section class="customPerfViewer">
+        <h2>Custom filter</h2>
+        <table><tr><td>
+                Project Name
+            </td><td>
+                Branch
+            </td><td>
+                Suite Name
+            </td><td>
+                Test Name
+            </td><td>
+                Keyword Name
+            </td><td>
+                Robot Tag
+            </td><td>
+                Python Tag
+            </td><td>
+                Metric
+            </td><td>
+            </tr>
+                <tr>
+                <td><select name="project_name"></select></td>
+                <td><select name="build_id"></select></td>
+                <td><select name="suite_name"></select></td>
+                <td><select name="test_name"></select></td>
+                <td><select name="kw_name"></select></td>
+                <td><select name="robot_tag"></select></td>
+                <td><select name="python_tag"></select></td>
+                <td><select name="metric"></select></td>
+            </tr></table>
+        <textarea id="customFilterText" cols=80 rows=4>
+        {
+            "metric": "cache-caas",
+            "test_name": "#groupby"
+        }
+        </textarea>
+        <br/><button onClick="customFilter(this.parentNode)">Render</button>
+        <canvas id="customChart" data-filter=''></canvas>
+    </section>
+</body>
+</html>
