@@ -1,1 +1,1 @@
-web: vendor/bin/heroku-php-apache2 perfviewer/
+web: python -m http.server 
