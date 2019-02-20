@@ -1,1 +1,1 @@
-web: python -m http.server -d perfviewer 80
+web: python -m http.server -d perfviewer $PORT
