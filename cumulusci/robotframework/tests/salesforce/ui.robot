@@ -177,3 +177,10 @@ Populate Form
     ${locator} =         Get Locator  object.field  Account Name
     ${value} =           Get Value  ${locator}
     Should Be Equal      ${value}  ${account_name}
+
+Fail, so we can test circleci
+    [Documentation]  Danger Will Robinson!
+    ...  This is for testing our circleci config.
+    ...  DON'T MERGE WITH MASTER
+
+    FAIL  failing because bryan said I should fail
