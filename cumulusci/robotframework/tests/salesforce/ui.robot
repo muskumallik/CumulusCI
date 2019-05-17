@@ -30,6 +30,10 @@ Create Contact
 
 *** Test Cases ***
 
+Identify the browser
+    go to  http://www.whatismybrowser.com
+    capture page screenshot
+
 Click Modal Button
     Go To Object Home            Contact
     Click Object Button          New
