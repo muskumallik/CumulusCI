@@ -536,7 +536,7 @@ class Salesforce(object):
             lex_locators["modal"]["is_open"], timeout=15
         )
 
-    def wait_until_loading_is_complete(self, locator=None):
+    def old_wait_until_loading_is_complete(self, locator=None):
         """Wait for LEX page to load.
 
         (We're actually waiting for the actions ribbon to appear.)
@@ -547,7 +547,73 @@ class Salesforce(object):
             self.wait_for_aura()
         except Exception:
             try:
+                self.selenium.log_location()
                 self.selenium.capture_page_screenshot()
             except Exception as e:
                 self.builtin.warn("unable to capture screenshot: {}".format(str(e)))
             raise
+
+    def wait_until_loading_is_complete(self, locator=None):
+        from urllib.parse import urlparse
+        import time
+
+        starttime = time.time()
+        counter = 0  # failsafe
+        while True and counter < 20:
+            counter += 1
+            location = self.selenium.get_location()
+            elapsed = time.time() - starttime
+            self.builtin.log(
+                "loop iteration #{}... location={} elapsed={}".format(
+                    counter, location, int(elapsed)
+                )
+            )
+            if elapsed > 180 or counter > 20:
+                # three minutes is more than enough, dagnabbit.
+                self.builtin.fatal_error(
+                    "Timed out waiting for lightning experience to load. Sorry about that, chief"
+                )
+
+            # Wait for initial render of the page
+            self.selenium.wait_for_condition(
+                "return (document.readyState == 'complete')", timeout=10
+            )
+            self.builtin.log("initial rendering is complete?")
+            self.selenium.capture_page_screenshot()
+
+            # Are we on the login page? We shouldn't be. Refresh and try again
+            url_parts = urlparse(self.selenium.get_location())
+            if url_parts.path == "/":
+                self.builtin.log(
+                    "hmmm. We appear to be on the login page; reloading...", "WARN"
+                )
+                self.log_location()
+                self.selenium.reload_page()
+                continue
+
+            # Are we on an error page? If so, log the error and try again.
+            try:
+                self.selenium.page_should_not_contain(
+                    "An error has occurred in the following section:"
+                )
+            except Exception:
+                self.log("We appear to be on an error page. Bummer.", "WARN")
+                self.log_location()
+                self.selenium.capture_page_screenshot()
+                self.selenium.log_source()
+                self.selenium.reload_page()
+                continue
+
+            # wait for the lightning header to appear
+            locator = lex_locators["body"] if locator is None else locator
+            try:
+                self.selenium.wait_until_page_contains_element(locator, timeout=10)
+                # wait for all pending XHTTP requests to finish
+                self.wait_for_aura()
+                self.builtin.log(
+                    "after waiting for the locator and waiting for aura..."
+                )
+                self.selenium.capture_page_screenshot()
+                break
+            except Exception:
+                self.log("Dang. No lightning. Back through the loop we go.")
